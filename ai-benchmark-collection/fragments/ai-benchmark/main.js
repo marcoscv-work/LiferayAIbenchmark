@@ -911,7 +911,7 @@
 		var validData = sorted.filter(function (d) { return d.value != null; });
 		var max = validData.length ? Math.max.apply(null, validData.map(function (d) { return d.value; })) : 1;
 		if (!isFinite(max) || max <= 0) max = 1;
-		var rowH = 24, gap = 8, padL = 160, padR = 60, padT = 8, padB = 8;
+		var rowH = 24, gap = 8, padL = 160, padR = 110, padT = 8, padB = 8;
 		var h = padT + padB + sorted.length * (rowH + gap) - gap;
 		var w = 520;
 		var bars = sorted.map(function (d, i) {
@@ -930,7 +930,7 @@
 		}).join('');
 		return '<div class="aibench__chart">' +
 			'<div class="aibench__chart-title">' + escapeHtml(title) + '</div>' +
-			'<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMinYMin meet">' + bars + '</svg>' +
+			'<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMinYMin meet" overflow="visible">' + bars + '</svg>' +
 			'</div>';
 	}
 
