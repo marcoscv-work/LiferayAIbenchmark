@@ -895,28 +895,56 @@
 		return s / valid.length;
 	}
 
-	function renderBarChart(title, data, unit, digits) {
-		var validData = data.filter(function (d) { return d.value != null; });
+	function renderBarChart(title, data, unit, digits, lowerIsBetter) {
+		var sorted = data.slice().sort(function (a, b) {
+			if (a.value == null && b.value == null) return 0;
+			if (a.value == null) return 1;
+			if (b.value == null) return -1;
+			return lowerIsBetter ? a.value - b.value : b.value - a.value;
+		});
+		var validData = sorted.filter(function (d) { return d.value != null; });
 		var max = validData.length ? Math.max.apply(null, validData.map(function (d) { return d.value; })) : 1;
 		if (!isFinite(max) || max <= 0) max = 1;
 		var rowH = 24, gap = 8, padL = 160, padR = 60, padT = 8, padB = 8;
-		var h = padT + padB + data.length * (rowH + gap) - gap;
+		var h = padT + padB + sorted.length * (rowH + gap) - gap;
 		var w = 520;
-		var bars = data.map(function (d, i) {
+		var bars = sorted.map(function (d, i) {
 			var y = padT + i * (rowH + gap);
 			var hasValue = d.value != null;
+			var isBest = hasValue && i === 0;
 			var barW = hasValue ? Math.max(2, (d.value / max) * (w - padL - padR)) : 0;
 			var valueLabel = hasValue ? fmt(d.value, digits) + ' ' + unit : 'N/A';
 			var valueX = hasValue ? padL + barW + 6 : padL + 6;
+			var barClass = isBest ? 'aibench__chart-bar aibench__chart-bar--best' : 'aibench__chart-bar';
+			var labelClass = isBest ? 'aibench__chart-label aibench__chart-label--best' : 'aibench__chart-label';
 			return '' +
-				'<text class="aibench__chart-label" x="' + (padL - 6) + '" y="' + (y + rowH / 2 + 4) + '" text-anchor="end">' + escapeHtml(d.label) + '</text>' +
-				(hasValue ? '<rect class="aibench__chart-bar" x="' + padL + '" y="' + y + '" width="' + barW + '" height="' + rowH + '" rx="3"/>' : '') +
-				'<text class="aibench__chart-value" x="' + valueX + '" y="' + (y + rowH / 2 + 4) + '">' + valueLabel + '</text>';
+				'<text class="' + labelClass + '" x="' + (padL - 6) + '" y="' + (y + rowH / 2 + 4) + '" text-anchor="end">' + escapeHtml(d.label) + '</text>' +
+				(hasValue ? '<rect class="' + barClass + '" x="' + padL + '" y="' + y + '" width="' + barW + '" height="' + rowH + '" rx="3"/>' : '') +
+				'<text class="aibench__chart-value" x="' + valueX + '" y="' + (y + rowH / 2 + 4) + '">' + valueLabel + (isBest ? ' ★' : '') + '</text>';
 		}).join('');
 		return '<div class="aibench__chart">' +
 			'<div class="aibench__chart-title">' + escapeHtml(title) + '</div>' +
 			'<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMinYMin meet">' + bars + '</svg>' +
 			'</div>';
+	}
+
+	function renderChampions(metrics) {
+		var cards = metrics.map(function (m) {
+			var valid = m.data.filter(function (d) { return d.value != null; });
+			if (!valid.length) return '';
+			var winner = valid.slice().sort(function (a, b) {
+				return m.lowerIsBetter ? a.value - b.value : b.value - a.value;
+			})[0];
+			var formatted = m.digits === 5
+				? (winner.value === 0 ? 'Free' : '$' + fmt(winner.value, 5))
+				: fmt(winner.value, m.digits) + ' ' + m.unit;
+			return '<div class="aibench__champion">' +
+				'<div class="aibench__champion-tag">' + escapeHtml(m.tag) + '</div>' +
+				'<div class="aibench__champion-model" title="' + escapeHtml(winner.label) + '">' + escapeHtml(winner.label) + '</div>' +
+				'<div class="aibench__champion-value">' + formatted + '</div>' +
+			'</div>';
+		}).join('');
+		return '<div class="aibench__champions mb-4">' + cards + '</div>';
 	}
 
 	function renderCompareCharts(models) {
@@ -934,10 +962,16 @@
 		var cost  = models.map(function (m) { return { label: m.modelLabel, value: avg(okRuns(m).map(function(r){return r.cost;})) }; });
 
 		box.innerHTML =
-			renderBarChart('Time to First Token (avg)', ttft, 'ms', 0) +
-			renderBarChart('Total Response Time (avg)', total, 'ms', 0) +
-			renderBarChart('Throughput (avg tokens/sec)', tps, 'tok/s', 1) +
-			renderBarChart('Estimated Cost (avg per run)', cost, 'USD', 5);
+			renderChampions([
+				{ tag: 'Fastest response',    data: ttft,  lowerIsBetter: true,  unit: 'ms',    digits: 0 },
+				{ tag: 'Best throughput',     data: tps,   lowerIsBetter: false, unit: 'tok/s', digits: 1 },
+				{ tag: 'Fastest total time',  data: total, lowerIsBetter: true,  unit: 'ms',    digits: 0 },
+				{ tag: 'Most cost-efficient', data: cost,  lowerIsBetter: true,  unit: 'USD',   digits: 5 }
+			]) +
+			renderBarChart('Time to First Token (avg)', ttft, 'ms', 0, true) +
+			renderBarChart('Total Response Time (avg)', total, 'ms', 0, true) +
+			renderBarChart('Throughput (avg tokens/sec)', tps, 'tok/s', 1, false) +
+			renderBarChart('Estimated Cost (avg per run)', cost, 'USD', 5, true);
 
 		var capBody = $('[data-control="capability-body"]');
 		capBody.innerHTML = models.map(function (m) {

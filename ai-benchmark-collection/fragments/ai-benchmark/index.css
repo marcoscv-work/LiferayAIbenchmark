@@ -190,10 +190,23 @@
 	fill: var(--primary-darker, #084af0);
 }
 
+.aibench__chart-bar--best {
+	fill: var(--success, #287d3c);
+}
+
+.aibench__chart-bar--best:hover {
+	fill: var(--success-d1, #1e5e2d);
+}
+
 .aibench__chart-label {
 	fill: var(--gray-700, #6b6c7e);
 	font-size: 11px;
 	font-family: var(--font-family-sans-serif, system-ui, sans-serif);
+}
+
+.aibench__chart-label--best {
+	fill: var(--gray-900, #272833);
+	font-weight: 700;
 }
 
 .aibench__chart-value {
@@ -201,6 +214,44 @@
 	font-size: 11px;
 	font-weight: 600;
 	font-family: var(--font-family-sans-serif, system-ui, sans-serif);
+}
+
+/* Champions summary */
+.aibench__champions {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 0.5rem;
+}
+
+.aibench__champion {
+	border: 1px solid var(--gray-300, #cdced9);
+	border-radius: 0.375rem;
+	padding: 0.75rem;
+	background: var(--white, #fff);
+}
+
+.aibench__champion-tag {
+	font-size: 0.6875rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--success, #287d3c);
+	margin-bottom: 0.35rem;
+}
+
+.aibench__champion-model {
+	font-weight: 700;
+	font-size: 0.875rem;
+	color: var(--gray-900, #272833);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.aibench__champion-value {
+	font-size: 0.8125rem;
+	color: var(--gray-600, #6b6c7e);
+	margin-top: 0.2rem;
 }
 
 /* Provider list */
