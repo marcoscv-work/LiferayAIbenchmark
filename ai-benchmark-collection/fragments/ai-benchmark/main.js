@@ -679,8 +679,7 @@
 	function fmtCost(v) {
 		if (v == null) return '—';
 		if (v === 0) return '$0';
-		var s = fmt(v, 5);
-		return '$' + (s === '0.00000' ? '<0.00001' : s);
+		return '$' + fmt(v, 5);
 	}
 
 	// UI - live result cards
