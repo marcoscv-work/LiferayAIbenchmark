@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Liferay Fragments CLI
+**/.liferay-fragments.json
+
+# Built artifact (regenerate with: cd ai-benchmark-collection && zip -r ../ai-benchmark-collection.zip collection.json fragments/)
+ai-benchmark-collection.zip

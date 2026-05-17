@@ -1,0 +1,293 @@
+/*
+ * AI Benchmark Fragment styles.
+ * Relies on Clay CSS variables already loaded by Liferay (Atlas/Lexicon).
+ * Only adds layout helpers + components that Clay does not ship.
+ */
+
+.aibench {
+	--aibench-gap: 0.5rem;
+	color: var(--body-color, inherit);
+}
+
+.aibench__inner {
+	max-width: 1320px;
+	margin: 0 auto;
+}
+
+.aibench__header-actions .btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.aibench__tabs .nav-link {
+	cursor: pointer;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	border-bottom: 2px solid transparent;
+	padding-bottom: 0.5rem;
+	margin-bottom: -2px;
+	color: var(--gray-700, #6b6c7e);
+	font-weight: 500;
+}
+
+.aibench__tabs .nav-link:hover {
+	color: var(--gray-900, #272833);
+	border-bottom-color: var(--gray-400, #b3b3b3);
+}
+
+.aibench__tabs .nav-link.active {
+	color: var(--primary, #0b5fff);
+	border-bottom-color: var(--primary, #0b5fff);
+	font-weight: 600;
+}
+
+.aibench__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--aibench-gap);
+	min-height: 2.25rem;
+	align-items: center;
+}
+
+.aibench__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.25rem 0.6rem;
+	border-radius: 999px;
+	background: var(--gray-200, #e7e7ed);
+	color: var(--gray-900, #272833);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.aibench__chip:hover {
+	background: var(--gray-300, #cdced9);
+}
+
+.aibench__chip.is-selected {
+	background: var(--primary, #0b5fff);
+	color: #fff;
+	border-color: var(--primary, #0b5fff);
+}
+
+.aibench__chip .aibench__chip-remove {
+	display: inline-flex;
+	margin-left: 0.25rem;
+	cursor: pointer;
+	opacity: 0.7;
+}
+
+.aibench__chip .aibench__chip-remove:hover {
+	opacity: 1;
+}
+
+.aibench__live-results {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 1rem;
+	margin-top: 1rem;
+}
+
+.aibench__live-card {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	min-height: 220px;
+}
+
+.aibench__live-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.aibench__live-title {
+	font-weight: 600;
+	font-size: 0.9375rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+.aibench__live-metrics {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 0.35rem;
+	font-size: 0.8125rem;
+}
+
+.aibench__metric {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.25rem 0.5rem;
+	background: var(--gray-100, #f7f8f9);
+	border-radius: 0.25rem;
+}
+
+.aibench__metric-label {
+	color: var(--gray-700, #6b6c7e);
+}
+
+.aibench__metric-value {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.aibench__live-output {
+	flex: 1;
+	font-family: var(--font-family-monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+	font-size: 0.75rem;
+	white-space: pre-wrap;
+	word-break: break-word;
+	background: var(--gray-100, #f7f8f9);
+	padding: 0.5rem;
+	border-radius: 0.25rem;
+	max-height: 200px;
+	overflow: auto;
+}
+
+/* Charts */
+.aibench__charts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+	gap: 1rem;
+}
+
+.aibench__chart {
+	background: var(--white, #fff);
+	border: 1px solid var(--gray-300, #cdced9);
+	border-radius: 0.25rem;
+	padding: 1rem;
+}
+
+.aibench__chart-title {
+	font-size: 0.875rem;
+	font-weight: 600;
+	margin-bottom: 0.75rem;
+	color: var(--gray-800, #393a4a);
+}
+
+.aibench__chart svg {
+	width: 100%;
+	height: auto;
+	display: block;
+}
+
+.aibench__chart-bar {
+	fill: var(--primary, #0b5fff);
+	transition: fill 0.15s ease;
+}
+
+.aibench__chart-bar:hover {
+	fill: var(--primary-darker, #084af0);
+}
+
+.aibench__chart-label {
+	fill: var(--gray-700, #6b6c7e);
+	font-size: 11px;
+	font-family: var(--font-family-sans-serif, system-ui, sans-serif);
+}
+
+.aibench__chart-value {
+	fill: var(--gray-900, #272833);
+	font-size: 11px;
+	font-weight: 600;
+	font-family: var(--font-family-sans-serif, system-ui, sans-serif);
+}
+
+/* Provider list */
+.aibench__provider-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid var(--gray-200, #e7e7ed);
+}
+
+.aibench__provider-row:last-child {
+	border-bottom: 0;
+}
+
+.aibench__provider-name {
+	flex: 0 0 140px;
+	font-weight: 600;
+}
+
+.aibench__provider-row input[type="password"],
+.aibench__provider-row input[type="text"] {
+	flex: 1;
+	min-width: 180px;
+}
+
+/* History rows */
+.aibench__history-table {
+	font-size: 0.8125rem;
+}
+
+.aibench__history-table td {
+	vertical-align: middle;
+}
+
+.aibench__history-table .aibench__prompt-cell {
+	max-width: 240px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.aibench__capability-table .aibench__cap-yes {
+	color: var(--success, #287d3c);
+	font-weight: 700;
+}
+
+.aibench__capability-table .aibench__cap-no {
+	color: var(--gray-500, #a7a9bc);
+}
+
+/* Spinner */
+.aibench__spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid var(--gray-300, #cdced9);
+	border-top-color: var(--primary, #0b5fff);
+	border-radius: 50%;
+	animation: aibench-spin 0.7s linear infinite;
+}
+
+@keyframes aibench-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Status pill */
+.aibench__pill {
+	display: inline-flex;
+	align-items: center;
+	white-space: nowrap;
+	flex-shrink: 0;
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.aibench__pill--ok { background: var(--success-l2, #dff3e4); color: var(--success-d2, #1a6629); }
+.aibench__pill--err { background: var(--danger-l2, #fdd8d8); color: var(--danger-d2, #b51010); }
+.aibench__pill--run { background: var(--info-l2, #d8e5f9); color: var(--info-d2, #1c4283); }
+
+/* Responsive */
+@media (max-width: 575.98px) {
+	.aibench__live-metrics { grid-template-columns: 1fr; }
+	.aibench__history-table { font-size: 0.75rem; }
+}

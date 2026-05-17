@@ -1,0 +1,266 @@
+[#assign ns = fragmentEntryLinkNamespace!"aibench"/]
+
+<div class="aibench" data-aibench-root data-icons="${themeDisplay.getPathThemeImages()}/clay/icons.svg">
+	<div class="aibench__inner container-fluid p-4">
+
+		<header class="aibench__header d-flex flex-wrap justify-content-between align-items-start mb-4">
+			<div class="aibench__title-block">
+				<h2 class="h3 mb-1">${configuration.title}</h2>
+				<p class="text-secondary mb-0">${configuration.subtitle}</p>
+			</div>
+
+			<div class="aibench__header-actions btn-group mt-2 mt-md-0" role="group" aria-label="Benchmark actions">
+				<button type="button" class="btn btn-secondary btn-sm" data-action="export" title="Export history as JSON">
+					<svg class="lexicon-icon" role="presentation" aria-hidden="true" width="16" height="16" viewBox="0 0 512 512" fill="currentColor"><path d="M256 16c-8.8 0-16 7.2-16 16v272.7l-69.3-69.4c-6.2-6.2-16.4-6.2-22.6 0s-6.2 16.4 0 22.6l96 96c6.2 6.2 16.4 6.2 22.6 0l96-96c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0L272 304.7V32c0-8.8-7.2-16-16-16zM64 384c-8.8 0-16 7.2-16 16v48c0 26.5 21.5 48 48 48h320c26.5 0 48-21.5 48-48v-48c0-8.8-7.2-16-16-16s-16 7.2-16 16v48c0 8.8-7.2 16-16 16H96c-8.8 0-16-7.2-16-16v-48c0-8.8-7.2-16-16-16z"/></svg>
+					Export
+				</button>
+				<button type="button" class="btn btn-secondary btn-sm" data-action="clear" title="Delete all history">
+					<svg class="lexicon-icon" role="presentation" aria-hidden="true" width="16" height="16" viewBox="0 0 512 512" fill="currentColor"><path d="M176 32h160c8.8 0 16 7.2 16 16v16h64c8.8 0 16 7.2 16 16s-7.2 16-16 16h-16v336c0 26.5-21.5 48-48 48H160c-26.5 0-48-21.5-48-48V96H96c-8.8 0-16-7.2-16-16s7.2-16 16-16h64V48c0-8.8 7.2-16 16-16zm16 32v16h128V64H192zM144 96v336c0 8.8 7.2 16 16 16h192c8.8 0 16-7.2 16-16V96H144zm64 64c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16zm96 0c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16z"/></svg>
+					Clear
+				</button>
+			</div>
+		</header>
+
+		<ul class="nav nav-underline aibench__tabs mb-4" role="tablist">
+			<li class="nav-item" role="presentation">
+				<button type="button" class="nav-link btn active" data-tab="run" role="tab" aria-selected="true" aria-current="page"><span>Run</span></button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button type="button" class="nav-link btn" data-tab="compare" role="tab" aria-selected="false"><span>Compare</span></button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button type="button" class="nav-link btn" data-tab="history" role="tab" aria-selected="false"><span>History <span class="badge badge-secondary ml-1" data-history-count>0</span></span></button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button type="button" class="nav-link btn" data-tab="apis" role="tab" aria-selected="false"><span>APIs</span></button>
+			</li>
+		</ul>
+
+		<!-- ===== RUN TAB ===== -->
+		<section class="aibench__panel" data-panel="run" role="tabpanel">
+
+			<div class="row align-items-end mb-2">
+				<div class="col-lg-9 mb-2 mb-lg-0">
+					<label class="control-label" for="${ns}-provider">Add model</label>
+					<div class="input-group">
+						<div class="input-group-item input-group-prepend">
+							<select class="form-control" id="${ns}-provider" data-control="provider-select"></select>
+						</div>
+						<div class="input-group-item input-group-prepend">
+							<select class="form-control" id="${ns}-model" data-control="model-select"></select>
+						</div>
+						<div class="input-group-item input-group-item-shrink input-group-append">
+							<button type="button" class="btn btn-secondary" data-action="add-model">Add</button>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-3">
+					<button type="button" class="btn btn-primary btn-block" data-action="run">
+						<svg class="lexicon-icon mr-2" role="presentation" aria-hidden="true" width="13" height="13" viewBox="0 0 512 512" fill="currentColor"><path d="M133.4 32.5c-9.9-5.7-22.1-5.7-32 0S85 49 85 60.5v391c0 11.5 6.5 22 16.5 27.9 9.9 5.8 22.1 5.8 32 0l328-195.5c9.6-5.7 15.5-16 15.5-27.2s-5.9-21.4-15.5-27.2L133.4 32.5z"/></svg>
+						Run Benchmark
+					</button>
+				</div>
+			</div>
+
+			<div class="aibench__chips mb-3" data-control="selected-models">
+				<span class="text-secondary small">No models selected yet.</span>
+			</div>
+
+			<div class="panel panel-secondary mb-3">
+				<button class="panel-header panel-header-link collapse-icon collapse-icon-middle collapsed btn btn-unstyled" type="button" aria-controls="${ns}-prompt-panel" aria-expanded="false" data-toggle="collapse" data-target="#${ns}-prompt-panel">
+					<div><span class="h5 mb-0">Prompt &amp; Options</span></div>
+					<span class="collapse-icon-closed">
+						<svg class="lexicon-icon lexicon-icon-angle-right" focusable="false" role="presentation"><use href="${themeDisplay.getPathThemeImages()}/clay/icons.svg#angle-right" /></svg>
+					</span>
+					<span class="collapse-icon-open">
+						<svg class="lexicon-icon lexicon-icon-angle-down" focusable="false" role="presentation"><use href="${themeDisplay.getPathThemeImages()}/clay/icons.svg#angle-down" /></svg>
+					</span>
+				</button>
+				<div class="panel-collapse collapse" id="${ns}-prompt-panel" role="region" aria-labelledby="${ns}-prompt-panel">
+					<div class="panel-body">
+
+						<div class="form-group">
+							<label class="control-label" for="${ns}-prompt">User prompt</label>
+							<textarea class="form-control" id="${ns}-prompt" rows="4" data-control="prompt">${configuration.defaultPrompt}</textarea>
+						</div>
+
+						<div class="form-group">
+							<label class="control-label" for="${ns}-system">System prompt <span class="text-secondary">(optional)</span></label>
+							<input type="text" class="form-control" id="${ns}-system" data-control="system" placeholder="You are a concise technical assistant." />
+						</div>
+
+						<div class="row">
+							<div class="col-sm-4">
+								<div class="form-group">
+									<label class="control-label" for="${ns}-max">Max tokens</label>
+									<input type="number" class="form-control" id="${ns}-max" data-control="max-tokens" value="256" min="1" max="8192" />
+								</div>
+							</div>
+							<div class="col-sm-4">
+								<div class="form-group">
+									<label class="control-label" for="${ns}-temp">Temperature</label>
+									<input type="number" class="form-control" id="${ns}-temp" data-control="temperature" value="0.7" min="0" max="2" step="0.1" />
+								</div>
+							</div>
+							<div class="col-sm-4">
+								<div class="form-group">
+									<label class="control-label" for="${ns}-runs">Runs per model</label>
+									<input type="number" class="form-control" id="${ns}-runs" data-control="runs" value="1" min="1" max="10" />
+								</div>
+							</div>
+						</div>
+
+						<div class="form-group form-check">
+							<input type="checkbox" class="form-check-input" id="${ns}-sim" data-control="simulation" />
+							<label class="form-check-label" for="${ns}-sim">Simulation mode (no real API calls)</label>
+						</div>
+
+					</div>
+				</div>
+			</div>
+
+			<div class="aibench__live-results" data-control="live-results"></div>
+		</section>
+
+		<!-- ===== COMPARE TAB ===== -->
+		<section class="aibench__panel d-none" data-panel="compare" role="tabpanel">
+
+			<div class="card card-type-asset mb-4">
+				<div class="card-body">
+					<h4 class="h5 mb-3">Select models to compare</h4>
+					<p class="text-secondary small mb-3">Aggregates all stored runs for the chosen models.</p>
+					<div class="aibench__chips" data-control="compare-pool">
+						<span class="text-secondary small">Run at least one benchmark to populate this list.</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="aibench__charts" data-control="compare-charts">
+				<div class="text-secondary text-center py-5">Select two or more models above.</div>
+			</div>
+
+			<div class="card card-type-asset mt-4" data-control="capability-card" hidden>
+				<div class="card-body">
+					<h4 class="h5 mb-3">Capabilities matrix</h4>
+					<div class="table-responsive">
+						<table class="table table-list aibench__capability-table">
+							<thead>
+								<tr>
+									<th>Model</th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Text generation support">Text</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Image/vision input support">Vision</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Audio input/output support">Audio</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Function calling / tool use support">Fn calls</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Structured JSON output mode">JSON mode</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Server-sent events streaming support">Streaming</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Maximum context window in tokens">Context</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Price per 1 million input tokens (USD)">$/1M in</span></th>
+									<th><span data-toggle="tooltip" data-placement="top" title="Price per 1 million output tokens (USD)">$/1M out</span></th>
+								</tr>
+							</thead>
+							<tbody data-control="capability-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ===== HISTORY TAB ===== -->
+		<section class="aibench__panel d-none" data-panel="history" role="tabpanel">
+			<div class="card card-type-asset">
+				<div class="card-body">
+					<div class="d-flex justify-content-between align-items-center mb-3">
+						<h4 class="h5 mb-0">Benchmark history</h4>
+						<div class="input-group input-group-sm" style="max-width:280px;">
+							<input type="text" class="form-control" placeholder="Filter by model or prompt" data-control="history-filter" />
+						</div>
+					</div>
+					<div class="table-responsive">
+						<table class="table table-list aibench__history-table">
+							<thead>
+								<tr>
+									<th>Date</th>
+									<th>Provider</th>
+									<th>Model</th>
+									<th>Prompt</th>
+									<th class="text-right"><span data-toggle="tooltip" data-placement="top" title="Time to First Token — ms from request start to first streamed token">TTFT (ms)</span></th>
+									<th class="text-right"><span data-toggle="tooltip" data-placement="top" title="Total response time — ms from request start to stream end">Total (ms)</span></th>
+									<th class="text-right"><span data-toggle="tooltip" data-placement="top" title="Input tokens / Output tokens reported by the provider">Tokens (in/out)</span></th>
+									<th class="text-right"><span data-toggle="tooltip" data-placement="top" title="Tokens per second — output tokens generated after the first token">tok/s</span></th>
+									<th class="text-right"><span data-toggle="tooltip" data-placement="top" title="Estimated cost in USD based on provider pricing per 1M tokens">$ est.</span></th>
+									<th>Status</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody data-control="history-body">
+								<tr><td colspan="11" class="text-center text-secondary py-4">No runs yet.</td></tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ===== APIS TAB ===== -->
+		<section class="aibench__panel d-none" data-panel="apis" role="tabpanel">
+			<div class="row">
+				<div class="col-lg-7 mb-3">
+					<div class="card card-type-asset">
+						<div class="card-body">
+							<h4 class="h5 mb-3">Built-in providers</h4>
+							<p class="text-secondary small mb-3">API keys are stored only in your browser localStorage. Leave empty to use simulation mode.</p>
+							<div data-control="provider-list"></div>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-5 mb-3" data-control="custom-api-section">
+					<div class="card card-type-asset">
+						<div class="card-body">
+							<h4 class="h5 mb-3">Custom API <small class="text-secondary">(OpenAI-compatible)</small></h4>
+
+							<div class="form-group">
+								<label class="control-label" for="${ns}-c-name">Display name</label>
+								<input type="text" class="form-control" id="${ns}-c-name" data-control="custom-name" placeholder="My local llama" />
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="${ns}-c-url">Endpoint URL</label>
+								<input type="text" class="form-control" id="${ns}-c-url" data-control="custom-url" placeholder="http://localhost:11434/v1/chat/completions" />
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="${ns}-c-model">Model ID</label>
+								<input type="text" class="form-control" id="${ns}-c-model" data-control="custom-model" placeholder="llama3.2" />
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="${ns}-c-key">API key <span class="text-secondary">(optional)</span></label>
+								<input type="password" class="form-control" id="${ns}-c-key" data-control="custom-key" autocomplete="off" />
+							</div>
+							<div class="row">
+								<div class="col-6">
+									<div class="form-group">
+										<label class="control-label" for="${ns}-c-in">$/1M input</label>
+										<input type="number" class="form-control" id="${ns}-c-in" data-control="custom-price-in" value="0" min="0" step="0.01" />
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="form-group">
+										<label class="control-label" for="${ns}-c-out">$/1M output</label>
+										<input type="number" class="form-control" id="${ns}-c-out" data-control="custom-price-out" value="0" min="0" step="0.01" />
+									</div>
+								</div>
+							</div>
+
+							<button type="button" class="btn btn-primary btn-block" data-action="add-custom-api">Add Custom API</button>
+
+							<hr/>
+							<h5 class="h6 mb-2">Registered custom APIs</h5>
+							<div data-control="custom-list">
+								<span class="text-secondary small">None registered yet.</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+	</div>
+</div>

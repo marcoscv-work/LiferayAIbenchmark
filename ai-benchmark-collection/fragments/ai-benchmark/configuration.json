@@ -1,0 +1,74 @@
+{
+	"fieldSets": [
+		{
+			"label": "General",
+			"fields": [
+				{
+					"name": "title",
+					"label": "Title",
+					"type": "text",
+					"defaultValue": "AI API Benchmark",
+					"dataType": "string"
+				},
+				{
+					"name": "subtitle",
+					"label": "Subtitle",
+					"type": "text",
+					"defaultValue": "Compare latency, throughput, cost and capabilities across LLM providers.",
+					"dataType": "string"
+				},
+				{
+					"name": "defaultPrompt",
+					"label": "Default Prompt",
+					"type": "text",
+					"defaultValue": "Explain quantum entanglement in one short paragraph.",
+					"dataType": "string"
+				}
+			]
+		},
+		{
+			"label": "Behavior",
+			"fields": [
+				{
+					"name": "allowCustomApis",
+					"label": "Allow Custom APIs",
+					"type": "checkbox",
+					"defaultValue": true
+				},
+				{
+					"name": "simulationMode",
+					"label": "Simulation Mode",
+					"type": "checkbox",
+					"defaultValue": false
+				},
+				{
+					"name": "storageKey",
+					"label": "LocalStorage Key",
+					"type": "text",
+					"defaultValue": "liferay-ai-benchmark",
+					"dataType": "string"
+				}
+			]
+		},
+		{
+			"label": "Display",
+			"fields": [
+				{
+					"name": "maxHistoryRows",
+					"label": "Max History Rows",
+					"type": "select",
+					"defaultValue": "50",
+					"dataType": "string",
+					"typeOptions": {
+						"validValues": [
+							{"value": "25", "label": "25"},
+							{"value": "50", "label": "50"},
+							{"value": "100", "label": "100"},
+							{"value": "250", "label": "250"}
+						]
+					}
+				}
+			]
+		}
+	]
+}
