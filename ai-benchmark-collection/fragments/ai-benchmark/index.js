@@ -938,9 +938,11 @@
 		var cards = metrics.map(function (m) {
 			var valid = m.data.filter(function (d) { return d.value != null; });
 			if (!valid.length) return '';
-			var winner = valid.slice().sort(function (a, b) {
+			var sorted = valid.slice().sort(function (a, b) {
 				return m.lowerIsBetter ? a.value - b.value : b.value - a.value;
-			})[0];
+			});
+			if (sorted.length > 1 && sorted[0].value === sorted[1].value) return '';
+			var winner = sorted[0];
 			var formatted = m.digits === 5
 				? fmtCost(winner.value)
 				: fmt(winner.value, m.digits) + ' ' + m.unit;
