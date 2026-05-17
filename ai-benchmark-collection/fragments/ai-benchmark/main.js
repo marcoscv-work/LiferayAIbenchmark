@@ -914,7 +914,7 @@
 		var rowH = 24, gap = 8, padL = 160, padR = 110, padT = 8, padB = 8;
 		var h = padT + padB + sorted.length * (rowH + gap) - gap;
 		var w = 520;
-		var tied = validData.length > 1 && validData[0].value === validData[1].value;
+		var tied = validData.length > 1 && fmt(validData[0].value, digits) === fmt(validData[1].value, digits);
 		var bars = sorted.map(function (d, i) {
 			var y = padT + i * (rowH + gap);
 			var hasValue = d.value != null;
