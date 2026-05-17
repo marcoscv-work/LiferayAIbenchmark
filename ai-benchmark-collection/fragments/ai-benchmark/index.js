@@ -676,6 +676,12 @@
 	}
 
 	// ----------------------------------------------------------------------
+	function fmtCost(v) {
+		if (v == null) return '—';
+		if (v === 0) return '$0';
+		return '$' + fmt(v, 5);
+	}
+
 	// UI - live result cards
 	// ----------------------------------------------------------------------
 	var TT = {
@@ -722,7 +728,7 @@
 		set('total', run.total != null ? fmt(run.total) + ' ms' : '—');
 		set('tokens', (run.outputTokens || '?') + ' out');
 		set('tps', run.tokensPerSec ? fmt(run.tokensPerSec, 1) : '—');
-		set('cost', run.cost != null ? '$' + fmt(run.cost, 5) : '—');
+		set('cost', fmtCost(run.cost));
 		var out = card.querySelector('[data-output]');
 		if (out) out.textContent = run.response;
 		if (run.status === 'ok') {
@@ -817,7 +823,7 @@
 				'<td class="text-right">' + (r.total != null ? fmt(r.total) : '—') + '</td>' +
 				'<td class="text-right">' + ((r.inputTokens || 0) + ' / ' + (r.outputTokens || 0)) + '</td>' +
 				'<td class="text-right">' + (r.tokensPerSec ? fmt(r.tokensPerSec, 1) : '—') + '</td>' +
-				'<td class="text-right">' + (r.cost != null ? '$' + fmt(r.cost, 5) : '—') + '</td>' +
+				'<td class="text-right">' + fmtCost(r.cost) + '</td>' +
 				'<td>' + statusPill + (r.simulated ? ' <span class="text-secondary small">sim</span>' : '') + '</td>' +
 				'<td><button class="btn btn-sm btn-unstyled" data-action="delete-run" data-id="' + r.id + '" title="Delete">' +
 					lexiconIcon('trash') +
@@ -895,7 +901,7 @@
 		return s / valid.length;
 	}
 
-	function renderBarChart(title, data, unit, digits, lowerIsBetter) {
+	function renderBarChart(title, data, unit, digits, lowerIsBetter, valueFmt) {
 		var sorted = data.slice().sort(function (a, b) {
 			if (a.value == null && b.value == null) return 0;
 			if (a.value == null) return 1;
@@ -913,7 +919,7 @@
 			var hasValue = d.value != null;
 			var isBest = hasValue && i === 0;
 			var barW = hasValue ? Math.max(2, (d.value / max) * (w - padL - padR)) : 0;
-			var valueLabel = hasValue ? fmt(d.value, digits) + ' ' + unit : 'N/A';
+			var valueLabel = hasValue ? (valueFmt ? valueFmt(d.value) : fmt(d.value, digits) + ' ' + unit) : 'N/A';
 			var valueX = hasValue ? padL + barW + 6 : padL + 6;
 			var barClass = isBest ? 'aibench__chart-bar aibench__chart-bar--best' : 'aibench__chart-bar';
 			var labelClass = isBest ? 'aibench__chart-label aibench__chart-label--best' : 'aibench__chart-label';
@@ -936,7 +942,7 @@
 				return m.lowerIsBetter ? a.value - b.value : b.value - a.value;
 			})[0];
 			var formatted = m.digits === 5
-				? (winner.value === 0 ? 'Free' : '$' + fmt(winner.value, 5))
+				? fmtCost(winner.value)
 				: fmt(winner.value, m.digits) + ' ' + m.unit;
 			return '<div class="aibench__champion">' +
 				'<div class="aibench__champion-tag">' + escapeHtml(m.tag) + '</div>' +
@@ -971,7 +977,7 @@
 			renderBarChart('Time to First Token (avg)', ttft, 'ms', 0, true) +
 			renderBarChart('Total Response Time (avg)', total, 'ms', 0, true) +
 			renderBarChart('Throughput (avg tokens/sec)', tps, 'tok/s', 1, false) +
-			renderBarChart('Estimated Cost (avg per run)', cost, 'USD', 5, true);
+			renderBarChart('Estimated Cost (avg per run)', cost, 'USD', 5, true, fmtCost);
 
 		var capBody = $('[data-control="capability-body"]');
 		capBody.innerHTML = models.map(function (m) {
