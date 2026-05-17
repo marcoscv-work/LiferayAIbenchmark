@@ -178,7 +178,10 @@
 		{
 			id: 'ollama',
 			name: 'Ollama (local)',
-			driver: 'openai',
+			driver: 'ollama',
+			noAuth: true,
+			sequential: true,
+			dynamicModels: true,
 			baseUrl: 'http://192.168.40.33:11434/v1/chat/completions',
 			authHeader: 'Authorization',
 			authPrefix: 'Bearer ',
@@ -186,7 +189,7 @@
 				{ id: 'mistral:7b',           label: 'Mistral 7B',          cap: {text:1,vision:0,audio:0,functions:0,json:0,streaming:1}, ctx: 32768,  priceIn: 0, priceOut: 0 },
 				{ id: 'deepseek-coder:6.7b',  label: 'DeepSeek Coder 6.7B', cap: {text:1,vision:0,audio:0,functions:0,json:0,streaming:1}, ctx: 16384,  priceIn: 0, priceOut: 0 },
 				{ id: 'qwen2.5-coder:latest', label: 'Qwen2.5 Coder 7B',    cap: {text:1,vision:0,audio:0,functions:0,json:0,streaming:1}, ctx: 32768,  priceIn: 0, priceOut: 0 },
-				{ id: 'gemma4:e4b',           label: 'Gemma4 E4B (8B)',      cap: {text:1,vision:0,audio:0,functions:0,json:0,streaming:1}, ctx: 128000, priceIn: 0, priceOut: 0 },
+				{ id: 'gemma4:e4b',           label: 'Gemma4 E4B (8B)',      cap: {text:1,vision:1,audio:0,functions:0,json:0,streaming:1}, ctx: 128000, priceIn: 0, priceOut: 0 },
 				{ id: 'gemma:2b',             label: 'Gemma 2B',             cap: {text:1,vision:0,audio:0,functions:0,json:0,streaming:1}, ctx: 8192,   priceIn: 0, priceOut: 0 },
 				{ id: 'qwen2:1.5b',           label: 'Qwen2 1.5B',           cap: {text:1,vision:0,audio:0,functions:0,json:0,streaming:1}, ctx: 32768,  priceIn: 0, priceOut: 0 },
 				{ id: 'phi3:latest',          label: 'Phi3 3.8B',            cap: {text:1,vision:0,audio:0,functions:0,json:0,streaming:1}, ctx: 128000, priceIn: 0, priceOut: 0 },
@@ -281,7 +284,14 @@
 				}]
 			};
 		}
-		return BUILTIN_PROVIDERS.find(function (p) { return p.id === providerId; });
+		var builtin = BUILTIN_PROVIDERS.find(function (p) { return p.id === providerId; });
+		if (builtin && Array.isArray(ui.dynamicModels[providerId])) {
+			var copy = {};
+			for (var k in builtin) copy[k] = builtin[k];
+			copy.models = ui.dynamicModels[providerId];
+			return copy;
+		}
+		return builtin;
 	}
 
 	function findModel(providerId, modelId) {
@@ -440,6 +450,44 @@
 					return null;
 				} catch (e) { return null; }
 			}
+		},
+		ollama: {
+			buildRequest: function (provider, model, prompt, system, opts) {
+				var origin = provider.baseUrl.replace(/\/v1\/.*$/, '');
+				var messages = [];
+				if (system) messages.push({ role: 'system', content: system });
+				messages.push({ role: 'user', content: prompt });
+				return {
+					url: origin + '/api/chat',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						model: model.id,
+						messages: messages,
+						stream: true,
+						options: { temperature: opts.temperature, num_predict: opts.maxTokens }
+					})
+				};
+			},
+			parseLine: function (line) {
+				if (!line.trim()) return null;
+				try {
+					var d = JSON.parse(line);
+					if (d.done) {
+						return {
+							done: true,
+							usage: {
+								prompt_tokens:        d.prompt_eval_count  || 0,
+								completion_tokens:    d.eval_count          || 0,
+								load_duration:        d.load_duration       || 0,
+								prompt_eval_duration: d.prompt_eval_duration || 0,
+								eval_duration:        d.eval_duration       || 0
+							}
+						};
+					}
+					var delta = d.message && d.message.content;
+					return delta ? { delta: delta } : null;
+				} catch (e) { return null; }
+			}
 		}
 	};
 
@@ -455,7 +503,7 @@
 		var driver = drivers[driverName];
 		if (!driver) return Promise.reject(new Error('No driver for ' + driverName));
 
-		var simulate = !!opts.simulation || !getApiKey(provider.id) && !provider._isCustom;
+		var simulate = !!opts.simulation || (!provider.noAuth && !getApiKey(provider.id) && !provider._isCustom);
 		// If a custom API has no key and was set as no-auth, it's still real.
 		if (provider._isCustom && !getApiKey(provider.id)) simulate = !!opts.simulation;
 
@@ -596,6 +644,10 @@
 							if (parsed.usage) {
 								if (parsed.usage.prompt_tokens != null) run.inputTokens = parsed.usage.prompt_tokens;
 								if (parsed.usage.completion_tokens != null) run.outputTokens = parsed.usage.completion_tokens;
+								if (parsed.usage.load_duration != null) {
+									run.loadTime = parsed.usage.load_duration / 1e6;
+									if (run.ttft != null) run.ttft = Math.max(0, run.ttft - run.loadTime);
+								}
 							}
 						});
 						return pump();
@@ -618,8 +670,69 @@
 	var ui = {
 		selectedModels: [],  // [{providerId, modelId}]
 		activeTab: 'run',
-		compareSelection: []
+		compareSelection: [],
+		dynamicModels: {}    // { providerId: null (loading) | model[] (loaded) }
 	};
+
+	function buildModelFromOllamaInfo(tagInfo, showInfo) {
+		var caps = showInfo.capabilities || [];
+		var families = (showInfo.details && showInfo.details.families) || [];
+		var name = tagInfo.name || '';
+		var hasVision = caps.indexOf('vision') !== -1 || families.indexOf('clip') !== -1
+			|| /llava|minicpm-v|moondream|bakllava|vision/i.test(name);
+		var hasTools = caps.indexOf('tools') !== -1
+			|| /qwen2\.5|llama3\.[12]|mistral-nemo|functionary|hermes/i.test(name);
+		var ctx = 4096;
+		if (showInfo.model_info) {
+			for (var key in showInfo.model_info) {
+				if (/context_length$/.test(key)) { ctx = showInfo.model_info[key]; break; }
+			}
+		}
+		var label = name;
+		var size = showInfo.details && showInfo.details.parameter_size;
+		if (size && name.indexOf(size.toLowerCase()) === -1) label += ' (' + size + ')';
+		return {
+			id: name,
+			label: label,
+			cap: { text: 1, vision: hasVision ? 1 : 0, audio: 0, functions: hasTools ? 1 : 0, json: 1, streaming: 1 },
+			ctx: ctx,
+			priceIn: 0,
+			priceOut: 0
+		};
+	}
+
+	function fetchProviderModels(provider) {
+		if (!provider || !provider.dynamicModels) return;
+		var pid = provider.id;
+		var origin = provider.baseUrl.replace(/\/v1\/.*$/, '');
+		ui.dynamicModels[pid] = null; // mark as loading
+		refreshModelOptions();
+		fetch(origin + '/api/tags')
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				var tagList = data.models || [];
+				var promises = tagList.map(function (m) {
+					return fetch(origin + '/api/show', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ name: m.name })
+					}).then(function (r) { return r.json(); })
+					.then(function (info) { return buildModelFromOllamaInfo(m, info); })
+					.catch(function () {
+						return { id: m.name, label: m.name, cap: { text: 1, vision: 0, audio: 0, functions: 0, json: 1, streaming: 1 }, ctx: 4096, priceIn: 0, priceOut: 0 };
+					});
+				});
+				return Promise.all(promises);
+			})
+			.then(function (models) {
+				ui.dynamicModels[pid] = models.length ? models : provider.models;
+				refreshModelOptions();
+			})
+			.catch(function () {
+				ui.dynamicModels[pid] = provider.models; // fallback to static list
+				refreshModelOptions();
+			});
+	}
 
 	function allProviders() {
 		var custom = state.customApis.map(function (c) {
@@ -636,7 +749,12 @@
 	function refreshModelOptions() {
 		var pSel = $('[data-control="provider-select"]');
 		var mSel = $('[data-control="model-select"]');
-		var p = findProvider(pSel.value);
+		var pid = pSel.value;
+		var p = findProvider(pid);
+		if (p && p.dynamicModels && ui.dynamicModels[pid] === null) {
+			mSel.innerHTML = '<option disabled>Detecting models…</option>';
+			return;
+		}
 		mSel.innerHTML = (p ? p.models : []).map(function (m) {
 			return '<option value="' + escapeHtml(m.id) + '">' + escapeHtml(m.label) + '</option>';
 		}).join('');
@@ -714,6 +832,7 @@
 				'<div class="aibench__metric"><span class="aibench__metric-label">' + tt('tok/s', 'tps') + '</span><span class="aibench__metric-value" data-m="tps">—</span></div>' +
 				'<div class="aibench__metric"><span class="aibench__metric-label">' + tt('$ est.', 'cost') + '</span><span class="aibench__metric-value" data-m="cost">—</span></div>' +
 				'<div class="aibench__metric"><span class="aibench__metric-label">Mode</span><span class="aibench__metric-value">' + (run.simulated ? 'Simulated' : 'Live') + '</span></div>' +
+				(run.providerId === 'ollama' ? '<div class="aibench__metric" data-m-row="loadtime"><span class="aibench__metric-label" title="Time Ollama spent loading the model into memory before generating">Load</span><span class="aibench__metric-value" data-m="loadtime">…</span></div>' : '') +
 			'</div>' +
 			'<div class="aibench__live-output" data-output></div>';
 		return card;
@@ -729,6 +848,8 @@
 		set('tokens', (run.outputTokens || '?') + ' out');
 		set('tps', run.tokensPerSec ? fmt(run.tokensPerSec, 1) : '—');
 		set('cost', fmtCost(run.cost));
+		if (run.loadTime != null) set('loadtime', fmt(run.loadTime) + ' ms');
+		else if (run.status === 'ok' && run.providerId === 'ollama') set('loadtime', '0 ms');
 		var out = card.querySelector('[data-output]');
 		if (out) out.textContent = run.response;
 		if (run.status === 'ok') {
@@ -773,7 +894,8 @@
 
 		var btn = $('[data-action="run"]');
 		btn.disabled = true;
-		var promises = tasks.map(function (sel) {
+
+		function makeTaskPromise(sel) {
 			var card;
 			return runBenchmark(sel.providerId, sel.modelId, prompt, system, opts, function (evt) {
 				if (evt.type === 'start') {
@@ -782,10 +904,24 @@
 				} else if (card) {
 					updateLiveCard(card, evt.run);
 				}
-			}).catch(function () { /* swallow per-task errors */ });
+			}).catch(function () {});
+		}
+
+		// Sequential providers (e.g. Ollama) run one-at-a-time so each model
+		// loads cleanly before the next starts. Cloud providers run in parallel.
+		var seqTasks = [], parTasks = [];
+		tasks.forEach(function (sel) {
+			var p = BUILTIN_PROVIDERS.filter(function (x) { return x.id === sel.providerId; })[0];
+			if (p && p.sequential) { seqTasks.push(sel); } else { parTasks.push(sel); }
 		});
 
-		Promise.all(promises).then(function () {
+		var seqChain = seqTasks.reduce(function (chain, sel) {
+			return chain.then(function () { return makeTaskPromise(sel); });
+		}, Promise.resolve());
+
+		var parPromises = parTasks.map(makeTaskPromise);
+
+		Promise.all(parPromises.concat([seqChain])).then(function () {
 			btn.disabled = false;
 			refreshHistory();
 			refreshComparePool();
@@ -924,9 +1060,12 @@
 			var valueX = hasValue ? padL + barW + 6 : padL + 6;
 			var barClass = isBest ? 'aibench__chart-bar aibench__chart-bar--best' : 'aibench__chart-bar';
 			var labelClass = isBest ? 'aibench__chart-label aibench__chart-label--best' : 'aibench__chart-label';
+			var rawTip = hasValue ? (digits >= 5
+				? (d.value === 0 ? '$0' : '$' + parseFloat(d.value.toPrecision(6)))
+				: parseFloat(d.value.toPrecision(6)) + ' ' + unit) : '';
 			return '' +
 				'<text class="' + labelClass + '" x="' + (padL - 6) + '" y="' + (y + rowH / 2 + 4) + '" text-anchor="end">' + escapeHtml(d.label) + '</text>' +
-				(hasValue ? '<rect class="' + barClass + '" x="' + padL + '" y="' + y + '" width="' + barW + '" height="' + rowH + '" rx="3"/>' : '') +
+				(hasValue ? '<rect class="' + barClass + '" x="' + padL + '" y="' + y + '" width="' + barW + '" height="' + rowH + '" rx="3" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top" title="' + escapeHtml(rawTip) + '"/>' : '') +
 				'<text class="aibench__chart-value" x="' + valueX + '" y="' + (y + rowH / 2 + 4) + '">' + valueLabel + (isBest ? ' ★' : '') + '</text>';
 		}).join('');
 		return '<div class="aibench__chart">' +
@@ -969,18 +1108,36 @@
 		var total = models.map(function (m) { return { label: m.modelLabel, value: avg(okRuns(m).map(function(r){return r.total;})) }; });
 		var tps   = models.map(function (m) { return { label: m.modelLabel, value: avg(okRuns(m).map(function(r){return r.tokensPerSec;})) }; });
 		var cost  = models.map(function (m) { return { label: m.modelLabel, value: avg(okRuns(m).map(function(r){return r.cost;})) }; });
+		var load  = models.map(function (m) { return { label: m.modelLabel, value: avg(okRuns(m).map(function(r){return r.loadTime != null ? r.loadTime : null;})) }; });
+		var hasLoadData = load.some(function (d) { return d.value != null; });
+
+		var champions = [
+			{ tag: 'Fastest response',    data: ttft,  lowerIsBetter: true,  unit: 'ms',    digits: 0 },
+			{ tag: 'Best throughput',     data: tps,   lowerIsBetter: false, unit: 'tok/s', digits: 1 },
+			{ tag: 'Fastest total time',  data: total, lowerIsBetter: true,  unit: 'ms',    digits: 0 },
+			{ tag: 'Most cost-efficient', data: cost,  lowerIsBetter: true,  unit: 'USD',   digits: 5 }
+		];
+		if (hasLoadData) champions.push({ tag: 'Fastest model load', data: load, lowerIsBetter: true, unit: 'ms', digits: 0 });
 
 		box.innerHTML =
-			renderChampions([
-				{ tag: 'Fastest response',    data: ttft,  lowerIsBetter: true,  unit: 'ms',    digits: 0 },
-				{ tag: 'Best throughput',     data: tps,   lowerIsBetter: false, unit: 'tok/s', digits: 1 },
-				{ tag: 'Fastest total time',  data: total, lowerIsBetter: true,  unit: 'ms',    digits: 0 },
-				{ tag: 'Most cost-efficient', data: cost,  lowerIsBetter: true,  unit: 'USD',   digits: 5 }
-			]) +
+			renderChampions(champions) +
 			renderBarChart('Time to First Token (avg)', ttft, 'ms', 0, true) +
 			renderBarChart('Total Response Time (avg)', total, 'ms', 0, true) +
 			renderBarChart('Throughput (avg tokens/sec)', tps, 'tok/s', 1, false) +
-			renderBarChart('Estimated Cost (avg per run)', cost, 'USD', 5, true, fmtCost);
+			renderBarChart('Estimated Cost (avg per run)', cost, 'USD', 5, true, fmtCost) +
+			(hasLoadData ? renderBarChart('Model Load Time (avg)', load, 'ms', 0, true) : '');
+
+		try {
+			box.querySelectorAll('[data-toggle="tooltip"]').forEach(function(el) {
+				if (window.bootstrap && window.bootstrap.Tooltip) {
+					var existing = window.bootstrap.Tooltip.getInstance(el);
+					if (existing) existing.dispose();
+					new window.bootstrap.Tooltip(el, { trigger: 'hover' });
+				} else if (window.jQuery && window.jQuery.fn.tooltip) {
+					window.jQuery(el).tooltip();
+				}
+			});
+		} catch(e) {}
 
 		var capBody = $('[data-control="capability-body"]');
 		capBody.innerHTML = models.map(function (m) {
@@ -1149,7 +1306,15 @@
 	});
 
 	root.addEventListener('change', function (e) {
-		if (e.target.matches && e.target.matches('[data-control="provider-select"]')) refreshModelOptions();
+		if (e.target.matches && e.target.matches('[data-control="provider-select"]')) {
+			var pid = e.target.value;
+			var p = BUILTIN_PROVIDERS.find(function (x) { return x.id === pid; });
+			if (p && p.dynamicModels && ui.dynamicModels[pid] === undefined) {
+				fetchProviderModels(p);
+			} else {
+				refreshModelOptions();
+			}
+		}
 	});
 
 	// ----------------------------------------------------------------------
@@ -1171,6 +1336,11 @@
 		renderCustomList();
 		refreshHistory();
 		refreshComparePool();
+
+		// Pre-fetch dynamic model lists (e.g. Ollama) in background
+		BUILTIN_PROVIDERS.forEach(function (p) {
+			if (p.dynamicModels) fetchProviderModels(p);
+		});
 	}
 
 	init();
