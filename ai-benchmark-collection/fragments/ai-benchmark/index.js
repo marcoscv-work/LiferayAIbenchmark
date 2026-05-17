@@ -914,10 +914,11 @@
 		var rowH = 24, gap = 8, padL = 160, padR = 110, padT = 8, padB = 8;
 		var h = padT + padB + sorted.length * (rowH + gap) - gap;
 		var w = 520;
+		var tied = validData.length > 1 && validData[0].value === validData[1].value;
 		var bars = sorted.map(function (d, i) {
 			var y = padT + i * (rowH + gap);
 			var hasValue = d.value != null;
-			var isBest = hasValue && i === 0;
+			var isBest = hasValue && i === 0 && !tied;
 			var barW = hasValue ? Math.max(2, (d.value / max) * (w - padL - padR)) : 0;
 			var valueLabel = hasValue ? (valueFmt ? valueFmt(d.value) : fmt(d.value, digits) + ' ' + unit) : 'N/A';
 			var valueX = hasValue ? padL + barW + 6 : padL + 6;
