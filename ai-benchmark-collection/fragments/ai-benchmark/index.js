@@ -1047,30 +1047,29 @@
 		var validData = sorted.filter(function (d) { return d.value != null; });
 		var max = validData.length ? Math.max.apply(null, validData.map(function (d) { return d.value; })) : 1;
 		if (!isFinite(max) || max <= 0) max = 1;
-		var rowH = 24, gap = 8, padL = 160, padR = 110, padT = 8, padB = 8;
-		var h = padT + padB + sorted.length * (rowH + gap) - gap;
-		var w = 520;
 		var tied = validData.length > 1 && fmt(validData[0].value, digits) === fmt(validData[1].value, digits);
-		var bars = sorted.map(function (d, i) {
-			var y = padT + i * (rowH + gap);
+		var rows = sorted.map(function (d, i) {
 			var hasValue = d.value != null;
 			var isBest = hasValue && i === 0 && !tied;
-			var barW = hasValue ? Math.max(2, (d.value / max) * (w - padL - padR)) : 0;
+			var pct = hasValue ? Math.max(0.4, (d.value / max) * 100) : 0;
 			var valueLabel = hasValue ? (valueFmt ? valueFmt(d.value) : fmt(d.value, digits) + ' ' + unit) : 'N/A';
-			var valueX = hasValue ? padL + barW + 6 : padL + 6;
-			var barClass = isBest ? 'aibench__chart-bar aibench__chart-bar--best' : 'aibench__chart-bar';
-			var labelClass = isBest ? 'aibench__chart-label aibench__chart-label--best' : 'aibench__chart-label';
 			var rawTip = hasValue ? (digits >= 5
 				? (d.value === 0 ? '$0' : '$' + parseFloat(d.value.toPrecision(6)))
 				: parseFloat(d.value.toPrecision(6)) + ' ' + unit) : '';
-			return '' +
-				'<text class="' + labelClass + '" x="' + (padL - 6) + '" y="' + (y + rowH / 2 + 4) + '" text-anchor="end">' + escapeHtml(d.label) + '</text>' +
-				(hasValue ? '<rect class="' + barClass + '" x="' + padL + '" y="' + y + '" width="' + barW + '" height="' + rowH + '" rx="3" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top" title="' + escapeHtml(rawTip) + '"/>' : '') +
-				'<text class="aibench__chart-value" x="' + valueX + '" y="' + (y + rowH / 2 + 4) + '">' + valueLabel + (isBest ? ' ★' : '') + '</text>';
+			var barClass = 'aibench__bar-fill' + (isBest ? ' aibench__bar-fill--best' : '');
+			var labelClass = 'aibench__bar-label' + (isBest ? ' aibench__bar-label--best' : '');
+			var valueClass = 'aibench__bar-value' + (isBest ? ' aibench__bar-value--best' : '');
+			return '<div class="aibench__bar-row">' +
+				'<div class="' + labelClass + '" title="' + escapeHtml(d.label) + '">' + escapeHtml(d.label) + '</div>' +
+				'<div class="aibench__bar-track">' +
+					(hasValue ? '<div class="' + barClass + '" style="width:' + pct + '%" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" title="' + escapeHtml(rawTip) + '"></div>' : '') +
+				'</div>' +
+				'<div class="' + valueClass + '">' + valueLabel + (isBest ? ' ★' : '') + '</div>' +
+			'</div>';
 		}).join('');
 		return '<div class="aibench__chart">' +
 			'<div class="aibench__chart-title">' + escapeHtml(title) + '</div>' +
-			'<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMinYMin meet" overflow="visible">' + bars + '</svg>' +
+			rows +
 			'</div>';
 	}
 
